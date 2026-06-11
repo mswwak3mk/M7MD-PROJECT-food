@@ -58,6 +58,21 @@ interface CountryDao {
 }
 
 @Dao
+interface CityDao {
+    @Query("SELECT * FROM cities")
+    fun getAllCities(): Flow<List<City>>
+
+    @Query("SELECT * FROM cities WHERE countryId = :countryId")
+    fun getCitiesByCountry(countryId: String): Flow<List<City>>
+
+    @Query("SELECT * FROM cities WHERE nameEn LIKE '%' || :query || '%' OR nameAr LIKE '%' || :query || '%'")
+    fun searchCities(query: String): Flow<List<City>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCity(city: City)
+}
+
+@Dao
 interface AchievementDao {
     @Query("SELECT * FROM user_achievements")
     fun getAllAchievements(): Flow<List<Achievement>>

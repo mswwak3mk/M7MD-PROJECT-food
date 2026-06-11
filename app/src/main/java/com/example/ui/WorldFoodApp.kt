@@ -19,7 +19,7 @@ import com.example.ui.theme.WorldFoodTheme
 fun WorldFoodApp() {
     val context = LocalContext.current
     val database = remember { AppDatabase.getDatabase(context) }
-    val repository = remember { FoodRepository(database.recipeDao(), database.countryDao(), database.achievementDao()) }
+    val repository = remember { FoodRepository(database.recipeDao(), database.countryDao(), database.cityDao(), database.achievementDao()) }
     val viewModel: MainViewModel = viewModel(factory = MainViewModelFactory(repository))
 
     // Initialize data
@@ -55,10 +55,10 @@ fun WorldFoodApp() {
                         onClick = { navController.navigate(AiChefRoute) }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.School, "Academy") },
-                        label = { Text("Academy") },
-                        selected = currentDestination?.route?.contains("Academy") == true,
-                        onClick = { navController.navigate(AcademyRoute) }
+                        icon = { Icon(Icons.Default.Person, "Profile") },
+                        label = { Text("Profile") },
+                        selected = currentDestination?.route?.contains("Profile") == true,
+                        onClick = { navController.navigate(ProfileRoute) }
                     )
                 }
             }
@@ -72,13 +72,17 @@ fun WorldFoodApp() {
                     HomeScreen(viewModel, onRecipeClick = { id -> navController.navigate(RecipeDetailRoute(id)) }) 
                 }
                 composable<ExploreRoute> { 
-                    ExploreScreen(viewModel, onCountryClick = { /* Filter home or navigate */ }) 
+                    ExploreScreen(
+                        viewModel = viewModel,
+                        onCountryClick = { /* Filter home or navigate */ },
+                        onNavigateToChef = { navController.navigate(AiChefRoute) }
+                    ) 
                 }
                 composable<AiChefRoute> { 
                     AiChefScreen(viewModel) 
                 }
-                composable<AcademyRoute> { 
-                    AcademyScreen(viewModel) 
+                composable<ProfileRoute> { 
+                    ProfileScreen(viewModel) 
                 }
                 composable<RecipeDetailRoute> { backStackEntry ->
                     val route: RecipeDetailRoute = backStackEntry.toRoute()

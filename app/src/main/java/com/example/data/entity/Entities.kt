@@ -55,6 +55,16 @@ data class Country(
     val description: String
 )
 
+@Entity(tableName = "cities")
+data class City(
+    @PrimaryKey val id: String,
+    val nameEn: String,
+    val nameAr: String,
+    val countryId: String,
+    val description: String,
+    val imageUrl: String? = null
+)
+
 @Entity(tableName = "user_achievements")
 data class Achievement(
     @PrimaryKey val id: String,

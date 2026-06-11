@@ -18,4 +18,7 @@ object AiChefRoute
 object AcademyRoute
 
 @Serializable
+object ProfileRoute
+
+@Serializable
 object FavoritesRoute

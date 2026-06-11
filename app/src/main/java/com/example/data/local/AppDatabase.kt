@@ -13,6 +13,7 @@ import com.example.data.entity.*
         Ingredient::class,
         Instruction::class,
         Country::class,
+        City::class,
         Achievement::class
     ],
     version = 1,
@@ -21,6 +22,7 @@ import com.example.data.entity.*
 abstract class AppDatabase : RoomDatabase() {
     abstract fun recipeDao(): RecipeDao
     abstract fun countryDao(): CountryDao
+    abstract fun cityDao(): CityDao
     abstract fun achievementDao(): AchievementDao
 
     companion object {
@@ -33,7 +35,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "world_food_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
                 INSTANCE = instance
                 instance
             }

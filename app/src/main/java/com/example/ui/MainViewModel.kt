@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.ai.GeminiClient
 import com.example.data.entity.*
 import com.example.data.repository.FoodRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class ChatMessage(val text: String, val isUser: Boolean)
 
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class MainViewModel(private val repository: FoodRepository) : ViewModel() {
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(listOf(
@@ -20,6 +23,7 @@ class MainViewModel(private val repository: FoodRepository) : ViewModel() {
 
     val allRecipes = repository.allRecipes.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allCountries = repository.allCountries.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allCities = repository.allCities.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val favoriteRecipes = repository.favoriteRecipes.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val achievements = repository.allAchievements.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -34,14 +38,42 @@ class MainViewModel(private val repository: FoodRepository) : ViewModel() {
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    private val _citySearchQuery = MutableStateFlow("")
+    val citySearchQuery = _citySearchQuery.asStateFlow()
+
+    private val _shoppingList = MutableStateFlow<List<String>>(emptyList())
+    val shoppingList = _shoppingList.asStateFlow()
+
+    val cityResults = citySearchQuery
+        .debounce(300)
+        .flatMapLatest { query ->
+            if (query.isBlank()) flowOf(emptyList())
+            else repository.searchCities(query)
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    fun updateCitySearchQuery(query: String) {
+        _citySearchQuery.value = query
     }
 
     fun toggleFavorite(recipe: Recipe) {
         viewModelScope.launch {
             repository.toggleFavorite(recipe)
         }
+    }
+
+    fun addToShoppingList(item: String) {
+        if (!_shoppingList.value.contains(item)) {
+            _shoppingList.value += item
+        }
+    }
+
+    fun removeFromShoppingList(item: String) {
+        _shoppingList.value -= item
     }
 
     // AI Components
@@ -62,17 +94,30 @@ class MainViewModel(private val repository: FoodRepository) : ViewModel() {
         }
     }
 
-    // Initialization with Mock Data
+    private var isDataInitialized = false
+
     fun initMockData() {
+        if (isDataInitialized) return
+        isDataInitialized = true
+        
         viewModelScope.launch {
-            if (allCountries.value.isEmpty()) {
+            val currentCountries = repository.allCountries.first()
+            if (currentCountries.isEmpty()) {
                 val jordan = Country("jo", "Jordan", "الأردن", "Asia", "", "The land of Petra and hospitality.")
                 val italy = Country("it", "Italy", "إيطاليا", "Europe", "", "Home of pasta and art.")
                 val japan = Country("jp", "Japan", "اليابان", "Asia", "", "Land of the rising sun and sushi.")
+                val saudi = Country("sa", "Saudi Arabia", "المملكة العربية السعودية", "Asia", "", "The heart of the Arabian Peninsula.")
                 
                 repository.insertCountry(jordan)
                 repository.insertCountry(italy)
                 repository.insertCountry(japan)
+                repository.insertCountry(saudi)
+
+                // Mock Cities
+                repository.insertCity(City("amman", "Amman", "عمان", "jo", "The capital of Jordan, known for street food."))
+                repository.insertCity(City("riyadh", "Riyadh", "الرياض", "sa", "The capital of Saudi Arabia, home to Najdi flavors."))
+                repository.insertCity(City("rome", "Rome", "روما", "it", "The Eternal City and birthplace of Carbonara."))
+                repository.insertCity(City("tokyo", "Tokyo", "طوكيو", "jp", "The world's most Michelin-starred city."))
 
                 val mansaf = Recipe(
                     id = "mansaf",
@@ -94,9 +139,34 @@ class MainViewModel(private val repository: FoodRepository) : ViewModel() {
                     chefTips = "Use high quality sheep Jameed for the best taste."
                 )
 
+                val kabsa = Recipe(
+                    id = "kabsa",
+                    nameEn = "Kabsa",
+                    nameAr = "كبسة",
+                    nameLocal = "الكبسة السعودية",
+                    countryId = "sa",
+                    category = "Lunch",
+                    cuisineType = "Traditional",
+                    history = "The most popular dish in Saudi Arabia, a fragrant rice dish made with meat and spices.",
+                    imageUrl = "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=1000",
+                    preparationTime = 20,
+                    cookingTime = 90,
+                    difficulty = "Medium",
+                    calories = 700,
+                    servings = 4,
+                    nutritionFacts = "Carbohydrates, Protein",
+                    allergens = "None",
+                    chefTips = "Searing the meat first adds incredible depth to the rice."
+                )
+
                 repository.insertRecipe(mansaf, 
                     listOf(Ingredient(recipeId = "mansaf", name = "Lamb", amount = "2", unit = "kg")),
                     listOf(Instruction(recipeId = "mansaf", stepNumber = 1, description = "Cook the lamb with spices until tender."))
+                )
+
+                repository.insertRecipe(kabsa,
+                    listOf(Ingredient(recipeId = "kabsa", name = "Chicken or Lamb", amount = "1", unit = "kg")),
+                    listOf(Instruction(recipeId = "kabsa", stepNumber = 1, description = "Sauté onions and spices, then add meat and water."))
                 )
             }
         }

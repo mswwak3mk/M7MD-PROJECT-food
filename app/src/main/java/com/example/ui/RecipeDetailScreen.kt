@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -34,7 +34,7 @@ fun RecipeDetailScreen(
                     title = { Text(r.nameEn) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                     actions = {
@@ -94,9 +94,23 @@ fun RecipeDetailScreen(
                         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                         
                         Text("Ingredients", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        // Mock ingredients for demo
-                        Text("• High quality meat\n• Traditional spices\n• Local vegetable selection", modifier = Modifier.padding(vertical = 8.dp))
+                        // In a real app, these would come from the repository
+                        val mockIngredients = listOf("High quality meat", "Traditional spices", "Local vegetable selection")
+                        Column {
+                            mockIngredients.forEach { ingredient ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("• $ingredient", modifier = Modifier.weight(1f))
+                                    TextButton(onClick = { viewModel.addToShoppingList(ingredient) }) {
+                                        Text("Add")
+                                    }
+                                }
+                            }
+                        }
 
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text("Instructions", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text("1. Prepare ingredients carefully.\n2. Follow traditional methods strictly.\n3. Serve warm and enjoy with family.", modifier = Modifier.padding(vertical = 8.dp))
                         
